@@ -14,13 +14,13 @@ jobs:
       cancel-in-progress: true
     strategy:
       fail-fast: false
-      matrix:
-        images:
-          - target: slim
-          - target: standard
-    timeout-minutes: 60
-    steps:
-      - name: Checkout Code
+  matrix:
+      images:
+        - target: slim
+        - target: standard
+  timeout-minutes: 60
+   steps:
+    - name: Checkout Code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
