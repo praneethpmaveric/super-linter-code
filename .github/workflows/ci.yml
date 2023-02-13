@@ -15,26 +15,21 @@ jobs:
       cancel-in-progress: true
     strategy:
       fail-fast: false
-      matrix:
-        images:
-          - target: slim
-          - target: standard
-    timeout-minutes: 60
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+   steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
 
-      - name: Update action.yml
-        run: yq '.runs.image = "docker://ghcr.io/github/super-linter:${{ matrix.images.target }}"' -i action.yml
+    - name: Update action.yml
+      run: yq '.runs.image = "docker://ghcr.io/github/super-linter:${{ matrix.images.target }}"' -i action.yml
 
-      - name: Retrieve Datetime
-        run: echo "BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "${GITHUB_ENV}"
+    - name: Retrieve Datetime
+      run: echo "BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "${GITHUB_ENV}"
 
-      - name: Build Image
-        uses: docker/build-push-action@v3
-        with:
+    - name: Build Image
+      uses: docker/build-push-action@v3
+      with:
           context: .
           file: ./Dockerfile
           build-args: |
@@ -48,9 +43,9 @@ jobs:
           tags: ghcr.io/github/super-linter:${{ matrix.images.target }}
           target: "${{ matrix.images.target }}"
 
-      - name: Test Local Action
-        uses: ./
-        env:
+    - name: Test Local Action
+      uses: ./
+      env:
           ACTIONS_RUNNER_DEBUG: true
           ERROR_ON_MISSING_EXEC_BIT: true
           VALIDATE_ALL_CODEBASE: false
@@ -58,18 +53,18 @@ jobs:
           DEFAULT_BRANCH: main
           LOCAL_UPDATES: true
 
-      - name: Run Test Suite
-        run: make IMAGE=${{ matrix.images.target }} test
+    - name: Run Test Suite
+      run: make IMAGE=${{ matrix.images.target }} test
 
-      - name: Upload Code Coverage Report
-        uses: codacy/codacy-coverage-reporter-action@v1
-        continue-on-error: true
-        with:
+    - name: Upload Code Coverage Report
+      uses: codacy/codacy-coverage-reporter-action@v1
+      continue-on-error: true
+      with:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
           coverage-reports: test/reports/cobertura/runTests.sh/cobertura.xml
 
-      - name: Run Super-Linter Tests
-        run: |
+    - name: Run Super-Linter Tests
+      run: |
           docker run \
           -e RUN_LOCAL=true \
           -e TEST_CASE_RUN=true \
@@ -78,11 +73,11 @@ jobs:
           -e ERROR_ON_MISSING_EXEC_BIT=true \
           -v "${GITHUB_WORKSPACE}:/tmp/lint" \
           "ghcr.io/github/super-linter:${tag}"
-        env:
+      env:
           tag: ${{ matrix.images.target }}
 
-      - name: Lint Entire Codebase
-        run: |
+    - name: Lint Entire Codebase
+      run: |
           docker run \
           -e RUN_LOCAL=true \
           -e OUTPUT_DETAILS=detailed \
@@ -90,5 +85,16 @@ jobs:
           -e ERROR_ON_MISSING_EXEC_BIT=true \
           -v "${GITHUB_WORKSPACE}:/tmp/lint" \
           "ghcr.io/github/super-linter:${tag}"
-        env:
+      env:
           tag: ${{ matrix.images.target }}
+          
+    - name: Super-Linter
+      uses: github/super-linter@v4.10.1
+      env:
+          VALIDATE_ALL_CODEBASE: false
+          DEFAULT_BRANCH: master
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+   
+          
+    
